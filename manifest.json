@@ -1,0 +1,17 @@
+{
+  "name": "PhotoFit — 写真リサイズ&回転",
+  "short_name": "PhotoFit",
+  "description": "端末内の写真をリサイズ・回転・トリミングして保存します。データはどこにも送信されません。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16181C",
+  "theme_color": "#16181C",
+  "lang": "ja",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#16181C">
+<title>PhotoFit — 写真リサイズ&回転</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PhotoFit">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16181C;
+    --surface:#1F2226;
+    --surface-2:#25292E;
+    --border:#2C3036;
+    --text:#E8E6E2;
+    --muted:#8B8F96;
+    --accent:#E8A33D;
+    --accent-dim:#8A6323;
+    --danger:#C96A5A;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif; overscroll-behavior-y:none;}
+  body{padding-bottom:96px;}
+
+  header{padding:28px 20px 18px; border-bottom:1px solid var(--border);}
+  .eyebrow{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em;
+    color:var(--accent); text-transform:uppercase; margin:0 0 6px;}
+  h1{font-family:'Archivo',sans-serif; font-weight:800; font-size:26px; margin:0; letter-spacing:-.01em;}
+  .sub{color:var(--muted); font-size:13px; margin:6px 0 0;}
+
+  main{padding:20px; max-width:640px; margin:0 auto;}
+
+  .dropzone{
+    border:1.5px dashed var(--border); border-radius:var(--radius);
+    padding:36px 20px; text-align:center; cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .dropzone:active{background:var(--surface); border-color:var(--accent-dim);}
+  .dropzone.drag-over{background:var(--surface); border-color:var(--accent); border-style:solid;}
+  .dropzone .icon{font-size:28px; display:block; margin-bottom:10px; opacity:.8;}
+  .dropzone .label{font-weight:600; font-size:15px;}
+  .dropzone .hint{color:var(--muted); font-size:12.5px; margin-top:4px;}
+  input[type=file]{display:none;}
+
+  section.panel{margin-top:22px;}
+  .panel-title{font-family:'Archivo',sans-serif; font-weight:700; font-size:13px;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin:0 0 10px;}
+
+  .chip-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{
+    font-family:'JetBrains Mono',monospace; font-size:13px; padding:9px 14px;
+    border-radius:999px; border:1px solid var(--border); background:var(--surface);
+    color:var(--text); cursor:pointer; user-select:none; transition:all .12s ease;
+  }
+  .chip.active{background:var(--accent); border-color:var(--accent); color:#1A1305; font-weight:600;}
+
+  .custom-dims{display:none; margin-top:12px; gap:10px; align-items:center;}
+  .custom-dims.show{display:flex;}
+  .custom-dims input[type=number]{
+    width:88px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; padding:9px 10px;
+    text-align:center;
+  }
+  .custom-dims input[type=number]:focus{outline:1px solid var(--accent); border-color:var(--accent);}
+  .x-sep{color:var(--muted); font-family:'JetBrains Mono',monospace;}
+  .lock-btn{
+    margin-left:auto; width:36px; height:36px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--muted); font-size:15px; cursor:pointer;
+  }
+  .lock-btn.locked{color:var(--accent); border-color:var(--accent-dim);}
+
+  .filesize-panel{display:none; margin-top:12px; gap:10px; align-items:center;}
+  .filesize-panel.show{display:flex;}
+  .filesize-panel input[type=number]{
+    width:100px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; padding:9px 10px;
+    text-align:center;
+  }
+  .filesize-panel input[type=number]:focus{outline:1px solid var(--accent); border-color:var(--accent);}
+  .filesize-panel select{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; padding:9px 8px;
+  }
+  .filesize-note{color:var(--muted); font-size:12px; margin:8px 0 0; line-height:1.5;}
+
+  .panel-title-row{display:flex; align-items:center; justify-content:space-between; margin:0 0 10px;}
+  .panel-title-row .panel-title{margin:0;}
+  .clear-all-btn{
+    background:none; border:none; color:var(--danger); font-size:12.5px;
+    cursor:pointer; padding:4px 2px; font-family:'Inter',sans-serif;
+  }
+
+  .crop-head-center{display:flex; align-items:center; gap:12px;}
+  .crop-rotate-btn{
+    width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text); font-size:16px; cursor:pointer;
+  }
+  .crop-rotate-btn:active{background:var(--accent); color:#1A1305;}
+
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:14px;}
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    overflow:hidden; position:relative;
+  }
+  .thumb-wrap{position:relative; width:100%; aspect-ratio:1; background:#0F1114;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .thumb-wrap canvas{max-width:100%; max-height:100%; transition:transform .18s ease;}
+  .card-foot{padding:9px 10px 11px;}
+  .readout{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); line-height:1.5;}
+  .readout b{color:var(--text); font-weight:500;}
+  .rot-controls{position:absolute; top:6px; right:6px; display:flex; gap:6px;}
+  .rot-btn{
+    width:30px; height:30px; border-radius:8px; border:none;
+    background:rgba(22,24,28,.72); backdrop-filter:blur(2px);
+    color:var(--text); font-size:15px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .rot-btn:active{background:var(--accent); color:#1A1305;}
+  .remove-btn{
+    position:absolute; top:6px; left:6px; width:24px; height:24px; border-radius:7px; border:none;
+    background:rgba(22,24,28,.72); color:var(--muted); font-size:13px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .remove-btn:active{color:var(--danger);}
+  .crop-controls{position:absolute; bottom:6px; right:6px;}
+  .crop-btn{
+    height:30px; padding:0 10px; border-radius:8px; border:none;
+    background:rgba(22,24,28,.72); backdrop-filter:blur(2px);
+    color:var(--text); font-size:12px; display:flex; align-items:center; gap:5px;
+    cursor:pointer;
+  }
+  .crop-btn:active{background:var(--accent); color:#1A1305;}
+  .crop-badge{
+    position:absolute; bottom:6px; left:6px; background:var(--accent); color:#1A1305;
+    font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700;
+    padding:3px 7px; border-radius:6px;
+  }
+
+  .crop-modal{
+    display:none; position:fixed; inset:0; background:var(--bg); z-index:50;
+    flex-direction:column;
+  }
+  .crop-modal.show{display:flex;}
+  .crop-modal-head{
+    display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+    border-bottom:1px solid var(--border);
+  }
+  .crop-modal-head button{
+    background:none; border:none; color:var(--text); font-family:'Archivo',sans-serif;
+    font-weight:700; font-size:14px; padding:8px 10px; cursor:pointer;
+  }
+  .crop-modal-head button#cropConfirmBtn{color:var(--accent);}
+  .crop-modal-head .title{font-family:'Archivo',sans-serif; font-weight:700; font-size:14px; color:var(--muted);}
+
+  .crop-stage{flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:16px; position:relative;}
+  .crop-img-wrap{position:relative; touch-action:none;}
+  .crop-img-wrap img{display:block; max-width:calc(100vw - 32px); max-height:calc(100vh - 260px); user-select:none; -webkit-user-drag:none;}
+  .crop-mask{position:absolute; background:rgba(0,0,0,.62); pointer-events:none; z-index:1;}
+  .crop-box{
+    position:absolute; border:2px solid var(--accent); box-sizing:border-box;
+    touch-action:none; cursor:move; z-index:2; user-select:none; -webkit-user-select:none;
+  }
+  .crop-box::before, .crop-box::after{
+    content:''; position:absolute; border:1px solid rgba(232,163,61,.45);
+  }
+  .crop-box::before{left:33.333%; right:33.333%; top:0; bottom:0; border-top:none; border-bottom:none;}
+  .crop-box::after{top:33.333%; bottom:33.333%; left:0; right:0; border-left:none; border-right:none;}
+  .crop-handle{
+    position:absolute; width:34px; height:34px; margin:-17px;
+    display:flex; align-items:center; justify-content:center; touch-action:none; z-index:3;
+  }
+  .crop-handle::after{content:''; width:16px; height:16px; border-radius:50%; background:var(--accent); border:2px solid var(--bg);}
+  .crop-handle.nw{left:0; top:0; cursor:nwse-resize;}
+  .crop-handle.ne{left:100%; top:0; cursor:nesw-resize;}
+  .crop-handle.sw{left:0; top:100%; cursor:nesw-resize;}
+  .crop-handle.se{left:100%; top:100%; cursor:nwse-resize;}
+
+  .crop-footer{padding:14px 16px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);}
+  .crop-footer .chip-row{justify-content:center;}
+  .crop-reset{
+    display:block; margin:10px auto 0; background:none; border:none; color:var(--muted);
+    font-size:12.5px; text-decoration:underline; cursor:pointer; padding:6px;
+  }
+
+  .actionbar{
+    position:fixed; left:0; right:0; bottom:0; padding:14px 20px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, var(--bg) 60%, transparent);
+    display:flex; justify-content:center;
+  }
+  .go-btn{
+    width:100%; max-width:600px; background:var(--accent); color:#1A1305; border:none;
+    border-radius:12px; padding:15px; font-family:'Archivo',sans-serif; font-weight:700;
+    font-size:15px; letter-spacing:.01em; cursor:pointer; box-shadow:0 6px 20px rgba(232,163,61,.18);
+  }
+  .go-btn:disabled{background:var(--surface-2); color:var(--muted); box-shadow:none;}
+  .go-btn .count{font-family:'JetBrains Mono',monospace; opacity:.75; font-weight:500; font-size:13px;}
+
+  .share-toggle{width:100%; max-width:600px; display:flex; justify-content:center; margin:0 auto 8px;}
+  .switch-label{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted); cursor:pointer;}
+  .switch-label input[type=checkbox]{width:16px; height:16px; accent-color:var(--accent);}
+  .switch-label.disabled{opacity:.4; cursor:not-allowed;}
+
+  .empty-state{display:none; text-align:center; padding:30px 10px; color:var(--muted); font-size:13px;}
+  .status{position:fixed; top:14px; left:50%; transform:translateX(-50%) translateY(-140%);
+    background:var(--surface); border:1px solid var(--border); color:var(--text);
+    padding:9px 16px; border-radius:999px; font-size:13px; transition:transform .25s ease; z-index:20;}
+  .status.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Local &middot; Offline &middot; No Upload</p>
+  <h1>PhotoFit</h1>
+  <p class="sub">端末内の写真をリサイズ・回転して保存します。データはどこにも送信されません。</p>
+</header>
+
+<main>
+  <label class="dropzone" id="dropzone">
+    <span class="icon">＋</span>
+    <span class="label">写真を選ぶ</span>
+    <span class="hint">複数選択できます（PCではドラッグ&amp;ドロップも可）</span>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+  </label>
+
+  <div id="settingsPanel" style="display:none;">
+    <section class="panel">
+      <p class="panel-title">サイズ（長辺の基準）</p>
+      <div class="chip-row" id="presetRow">
+        <div class="chip active" data-preset="original">原寸</div>
+        <div class="chip" data-preset="2048">2048px</div>
+        <div class="chip" data-preset="1600">1600px</div>
+        <div class="chip" data-preset="1080">1080px</div>
+        <div class="chip" data-preset="custom">カスタム</div>
+        <div class="chip" data-preset="filesize">ファイルサイズ指定</div>
+      </div>
+      <div class="custom-dims" id="customDims">
+        <input type="number" id="customW" placeholder="幅">
+        <span class="x-sep">×</span>
+        <input type="number" id="customH" placeholder="高さ">
+        <span style="font-size:11px; color:var(--muted);">px</span>
+        <button class="lock-btn locked" id="lockBtn" title="縦横比を固定">🔗</button>
+      </div>
+      <div class="filesize-panel" id="filesizePanel">
+        <span style="font-size:12px; color:var(--muted);">目標</span>
+        <input type="number" id="targetSize" placeholder="500" value="500">
+        <select id="targetUnit">
+          <option value="KB" selected>KB</option>
+          <option value="MB">MB</option>
+        </select>
+        <span style="font-size:12px; color:var(--muted);">以下</span>
+      </div>
+      <p class="filesize-note" id="filesizeNote" style="display:none;">画質と大きさを自動調整して目標サイズに近づけます（JPEGで出力）。極端に小さい目標値の場合、大きさを大幅に縮小することがあります。</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title-row">
+        <p class="panel-title">選択した写真（<span id="photoCount">0</span>枚）</p>
+        <button class="clear-all-btn" id="clearAllBtn">すべて削除</button>
+      </div>
+      <div class="grid" id="grid"></div>
+      <p class="empty-state" id="emptyState">写真を選ぶとここに一覧が表示されます</p>
+    </section>
+  </div>
+</main>
+
+<div class="actionbar" id="actionbar" style="display:none;">
+  <div class="share-toggle" id="shareToggleRow">
+    <label class="switch-label">
+      <input type="checkbox" id="shareToggle">
+      <span>保存先を毎回選ぶ（共有機能を使用）</span>
+    </label>
+  </div>
+  <button class="go-btn" id="goBtn">変換して保存 <span class="count" id="goCount"></span></button>
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="crop-modal" id="cropModal">
+  <div class="crop-modal-head">
+    <button id="cropCancelBtn">キャンセル</button>
+    <div class="crop-head-center">
+      <button class="crop-rotate-btn" id="cropRotateLeftBtn" title="左に回転">↺</button>
+      <span class="title">トリミング</span>
+      <button class="crop-rotate-btn" id="cropRotateRightBtn" title="右に回転">↻</button>
+    </div>
+    <button id="cropConfirmBtn">完了</button>
+  </div>
+  <div class="crop-stage">
+    <div class="crop-img-wrap" id="cropImgWrap">
+      <img id="cropImg" alt="">
+      <div class="crop-mask" id="maskTop"></div>
+      <div class="crop-mask" id="maskBottom"></div>
+      <div class="crop-mask" id="maskLeft"></div>
+      <div class="crop-mask" id="maskRight"></div>
+      <div class="crop-box" id="cropBox">
+        <div class="crop-handle nw" data-handle="nw"></div>
+        <div class="crop-handle ne" data-handle="ne"></div>
+        <div class="crop-handle sw" data-handle="sw"></div>
+        <div class="crop-handle se" data-handle="se"></div>
+      </div>
+    </div>
+  </div>
+  <div class="crop-footer">
+    <div class="chip-row" id="aspectRow">
+      <div class="chip active" data-aspect="free">自由</div>
+      <div class="chip" data-aspect="1">1:1</div>
+      <div class="chip" data-aspect="1.333">4:3</div>
+      <div class="chip" data-aspect="0.75">3:4</div>
+      <div class="chip" data-aspect="1.778">16:9</div>
+      <div class="chip" data-aspect="0.5625">9:16</div>
+    </div>
+    <button class="crop-reset" id="cropResetBtn">トリミングを解除して元に戻す</button>
+  </div>
+</div>
+
+<script>
+const state = { items: [], resizeMode: 'original', customW: null, customH: null, lockAspect: true,
+  targetSizeKB: 500, useShare: false };
+let idSeq = 0;
+
+const fileInput = document.getElementById('fileInput');
+const dropzone = document.getElementById('dropzone');
+const settingsPanel = document.getElementById('settingsPanel');
+const grid = document.getElementById('grid');
+const photoCount = document.getElementById('photoCount');
+const emptyState = document.getElementById('emptyState');
+const actionbar = document.getElementById('actionbar');
+const goBtn = document.getElementById('goBtn');
+const goCount = document.getElementById('goCount');
+const presetRow = document.getElementById('presetRow');
+const customDims = document.getElementById('customDims');
+const customW = document.getElementById('customW');
+const customH = document.getElementById('customH');
+const lockBtn = document.getElementById('lockBtn');
+const statusEl = document.getElementById('status');
+const filesizePanel = document.getElementById('filesizePanel');
+const filesizeNote = document.getElementById('filesizeNote');
+const targetSize = document.getElementById('targetSize');
+const targetUnit = document.getElementById('targetUnit');
+const shareToggleRow = document.getElementById('shareToggleRow');
+const shareToggle = document.getElementById('shareToggle');
+
+const shareSupported = !!(navigator.share && navigator.canShare);
+if (!shareSupported) {
+  shareToggle.disabled = true;
+  shareToggleRow.querySelector('.switch-label').classList.add('disabled');
+  shareToggleRow.querySelector('span').textContent = '保存先を毎回選ぶ（この端末では非対応）';
+}
+shareToggle.addEventListener('change', ()=>{
+  state.useShare = shareToggle.checked;
+});
+
+function showStatus(msg){
+  statusEl.textContent = msg;
+  statusEl.classList.add('show');
+  setTimeout(()=> statusEl.classList.remove('show'), 1800);
+}
+
+fileInput.addEventListener('change', (e)=>{
+  const files = Array.from(e.target.files || []);
+  files.forEach(addFile);
+  fileInput.value = '';
+});
+
+function handleDroppedFiles(dataTransfer){
+  const files = Array.from(dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+  files.forEach(addFile);
+}
+
+// dropzone自体：見た目のフィードバック付きでドロップを受け付ける
+['dragenter', 'dragover'].forEach(evt => {
+  dropzone.addEventListener(evt, (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.add('drag-over');
+  });
+});
+['dragleave', 'drop'].forEach(evt => {
+  dropzone.addEventListener(evt, (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.remove('drag-over');
+  });
+});
+dropzone.addEventListener('drop', (e)=>{
+  handleDroppedFiles(e.dataTransfer);
+});
+
+// ページ全体：写真一覧の上などにドロップしても追加できるようにする（PC利用時の利便性のため）
+document.addEventListener('dragover', (e)=> e.preventDefault());
+document.addEventListener('drop', (e)=>{
+  e.preventDefault();
+  if (e.target.closest('#dropzone')) return; // dropzone側のハンドラに任せる
+  if (e.target.closest('#cropModal')) return; // トリミング画面上では無効
+  handleDroppedFiles(e.dataTransfer);
+});
+
+function addFile(file){
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = ()=>{
+    const item = {
+      id: idSeq++,
+      file, img, url,
+      rotation: 0,
+      naturalW: img.naturalWidth,
+      naturalH: img.naturalHeight,
+    };
+    state.items.push(item);
+    renderAll();
+  };
+  img.src = url;
+}
+
+function getRotatedCanvas(item){
+  if (item._rotCanvas && item._rotCacheRotation === item.rotation) return item._rotCanvas;
+  const rotatedW = (item.rotation === 90 || item.rotation === 270) ? item.naturalH : item.naturalW;
+  const rotatedH = (item.rotation === 90 || item.rotation === 270) ? item.naturalW : item.naturalH;
+  const canvas = document.createElement('canvas');
+  canvas.width = rotatedW;
+  canvas.height = rotatedH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, rotatedW, rotatedH);
+  ctx.save();
+  ctx.translate(rotatedW / 2, rotatedH / 2);
+  ctx.rotate(item.rotation * Math.PI / 180);
+  ctx.drawImage(item.img, -item.naturalW / 2, -item.naturalH / 2, item.naturalW, item.naturalH);
+  ctx.restore();
+  item._rotCanvas = canvas;
+  item._rotCacheRotation = item.rotation;
+  return canvas;
+}
+
+function getEffectiveCanvas(item){
+  const rotCanvas = getRotatedCanvas(item);
+  if (!item.crop) return {canvas: rotCanvas, w: rotCanvas.width, h: rotCanvas.height};
+  const {x, y, w, h} = item.crop;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(rotCanvas, x, y, w, h, 0, 0, w, h);
+  return {canvas, w, h};
+}
+
+function effectiveDims(item){
+  if (item.crop) return {w: item.crop.w, h: item.crop.h};
+  const rotCanvas = getRotatedCanvas(item);
+  return {w: rotCanvas.width, h: rotCanvas.height};
+}
+
+function outputDims(item){
+  let {w, h} = effectiveDims(item);
+
+  if (state.resizeMode === 'original') return {w, h};
+  if (state.resizeMode === 'filesize') return {w, h, auto: true};
+
+  if (state.resizeMode === 'custom') {
+    const cw = state.customW || w;
+    const ch = state.customH || h;
+    return {w: Math.round(cw), h: Math.round(ch)};
+  }
+
+  const longEdge = parseInt(state.resizeMode, 10);
+  if (w >= h) {
+    const scale = longEdge / w;
+    return {w: longEdge, h: Math.round(h * scale)};
+  } else {
+    const scale = longEdge / h;
+    return {w: Math.round(w * scale), h: longEdge};
+  }
+}
+
+function renderAll(){
+  const has = state.items.length > 0;
+  settingsPanel.style.display = has ? 'block' : 'none';
+  actionbar.style.display = has ? 'flex' : 'none';
+  emptyState.style.display = has ? 'none' : 'block';
+  photoCount.textContent = state.items.length;
+  goCount.textContent = has ? `(${state.items.length}枚)` : '';
+  goBtn.disabled = !has;
+
+  grid.innerHTML = '';
+  state.items.forEach(item=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const dims = outputDims(item);
+    card.innerHTML = `
+      <div class="thumb-wrap">
+        <canvas width="200" height="200"></canvas>
+        <button class="remove-btn" data-action="remove" data-id="${item.id}">✕</button>
+        <div class="rot-controls">
+          <button class="rot-btn" data-action="rotate-left" data-id="${item.id}">↺</button>
+          <button class="rot-btn" data-action="rotate-right" data-id="${item.id}">↻</button>
+        </div>
+        ${item.crop ? `<span class="crop-badge">トリミング済</span>` : ''}
+        <div class="crop-controls">
+          <button class="crop-btn" data-action="crop" data-id="${item.id}">⛶ トリミング</button>
+        </div>
+      </div>
+      <div class="card-foot">
+        <div class="readout"><b>${item.naturalW}×${item.naturalH}</b> → ${dims.auto ? '自動調整' : dims.w + '×' + dims.h}</div>
+      </div>
+    `;
+    grid.appendChild(card);
+
+    const canvas = card.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    const {canvas: srcCanvas, w: srcW, h: srcH} = getEffectiveCanvas(item);
+    const scale = Math.min(200 / srcW, 200 / srcH);
+    const dw = srcW * scale, dh = srcH * scale;
+    ctx.clearRect(0,0,200,200);
+    ctx.drawImage(srcCanvas, 0, 0, srcW, srcH, (200-dw)/2, (200-dh)/2, dw, dh);
+  });
+}
+
+grid.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const id = parseInt(btn.dataset.id, 10);
+  const item = state.items.find(i=>i.id === id);
+  if (!item) return;
+
+  if (btn.dataset.action === 'remove') {
+    state.items = state.items.filter(i=>i.id !== id);
+  } else if (btn.dataset.action === 'rotate-left') {
+    item.rotation = (item.rotation + 270) % 360;
+    item.crop = null;
+  } else if (btn.dataset.action === 'rotate-right') {
+    item.rotation = (item.rotation + 90) % 360;
+    item.crop = null;
+  } else if (btn.dataset.action === 'crop') {
+    openCropEditor(item);
+    return;
+  }
+  renderAll();
+});
+
+presetRow.addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  [...presetRow.children].forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  const preset = chip.dataset.preset;
+  state.resizeMode = preset;
+  customDims.classList.toggle('show', preset === 'custom');
+  filesizePanel.classList.toggle('show', preset === 'filesize');
+  filesizeNote.style.display = preset === 'filesize' ? 'block' : 'none';
+  if (preset === 'custom' && state.items[0]) {
+    customW.value = state.items[0].naturalW;
+    customH.value = state.items[0].naturalH;
+    state.customW = state.items[0].naturalW;
+    state.customH = state.items[0].naturalH;
+  }
+  renderAll();
+});
+
+targetSize.addEventListener('input', ()=>{
+  state.targetSizeKB = parseFloat(targetSize.value) || 0;
+});
+targetUnit.addEventListener('change', ()=>{
+  // unit itself is read at process time; nothing to precompute here
+});
+
+let aspectRatio = 1;
+customW.addEventListener('input', ()=>{
+  state.customW = parseInt(customW.value, 10) || null;
+  if (state.lockAspect && state.items[0]) {
+    aspectRatio = state.items[0].naturalH / state.items[0].naturalW;
+    if (state.customW) {
+      customH.value = Math.round(state.customW * aspectRatio);
+      state.customH = parseInt(customH.value, 10);
+    }
+  }
+  renderAll();
+});
+customH.addEventListener('input', ()=>{
+  state.customH = parseInt(customH.value, 10) || null;
+  if (state.lockAspect && state.items[0]) {
+    aspectRatio = state.items[0].naturalW / state.items[0].naturalH;
+    if (state.customH) {
+      customW.value = Math.round(state.customH * aspectRatio);
+      state.customW = parseInt(customW.value, 10);
+    }
+  }
+  renderAll();
+});
+lockBtn.addEventListener('click', ()=>{
+  state.lockAspect = !state.lockAspect;
+  lockBtn.classList.toggle('locked', state.lockAspect);
+});
+
+async function processItem(item){
+  const {canvas: srcCanvas, w: srcW, h: srcH} = getEffectiveCanvas(item);
+  const dims = outputDims(item);
+  const canvas = document.createElement('canvas');
+  canvas.width = dims.w;
+  canvas.height = dims.h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(srcCanvas, 0, 0, srcW, srcH, 0, 0, dims.w, dims.h);
+
+  const mime = /png/i.test(item.file.type) ? 'image/png' : 'image/jpeg';
+  return new Promise(resolve=>{
+    canvas.toBlob(blob=>{
+      const baseName = item.file.name.replace(/\.[^.]+$/, '');
+      const ext = mime === 'image/png' ? 'png' : 'jpg';
+      resolve({blob, filename: `${baseName}_edit.${ext}`});
+    }, mime, 0.92);
+  });
+}
+
+function renderScaledCanvas(item, scale){
+  const {canvas: srcCanvas, w: srcW, h: srcH} = getEffectiveCanvas(item);
+  const outW = Math.max(1, Math.round(srcW * scale));
+  const outH = Math.max(1, Math.round(srcH * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, outW, outH);
+  ctx.drawImage(srcCanvas, 0, 0, srcW, srcH, 0, 0, outW, outH);
+  return {canvas, outW, outH};
+}
+
+function canvasToBlobP(canvas, quality){
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+}
+
+async function compressToTargetSize(item, targetBytes){
+  let scale = 1;
+  const minLongEdge = 320;
+  let result = null;
+
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const {canvas, outW, outH} = renderScaledCanvas(item, scale);
+    let lo = 0.25, hi = 0.95, chosen = null;
+    for (let i = 0; i < 6; i++) {
+      const q = (lo + hi) / 2;
+      const blob = await canvasToBlobP(canvas, q);
+      if (blob.size > targetBytes) { hi = q; } else { chosen = blob; lo = q; }
+    }
+    if (!chosen) chosen = await canvasToBlobP(canvas, 0.25);
+    result = {blob: chosen, w: outW, h: outH};
+    if (chosen.size <= targetBytes || Math.max(outW, outH) <= minLongEdge) break;
+    scale *= 0.82;
+  }
+  return result;
+}
+
+async function buildResults(){
+  const results = [];
+  const total = state.items.length;
+  for (let i = 0; i < total; i++) {
+    goBtn.textContent = `処理中… (${i + 1}/${total})`;
+    const item = state.items[i];
+    const baseName = item.file.name.replace(/\.[^.]+$/, '');
+
+    if (state.resizeMode === 'filesize') {
+      const unitBytes = targetUnit.value === 'MB' ? 1024 * 1024 : 1024;
+      const targetBytes = Math.max(10 * 1024, (state.targetSizeKB || 0) * unitBytes);
+      const res = await compressToTargetSize(item, targetBytes);
+      results.push({blob: res.blob, filename: `${baseName}_edit.jpg`});
+    } else {
+      const out = await processItem(item);
+      results.push({blob: out.blob, filename: out.filename});
+    }
+  }
+  return results;
+}
+
+async function downloadResults(results){
+  for (const {blob, filename} of results) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    await new Promise(r => setTimeout(r, 350));
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function shareResults(results){
+  const files = results.map(r => new File([r.blob], r.filename, {type: r.blob.type}));
+  if (!(navigator.canShare && navigator.canShare({files}))) return false;
+  await navigator.share({files, title: 'PhotoFit'});
+  return true;
+}
+
+goBtn.addEventListener('click', async ()=>{
+  goBtn.disabled = true;
+  const results = await buildResults();
+
+  if (state.useShare) {
+    try {
+      const shared = await shareResults(results);
+      if (!shared) throw new Error('share-unsupported');
+      showStatus('共有シートで保存先を選んでください');
+    } catch (err) {
+      if (err && err.name === 'AbortError') {
+        showStatus('共有をキャンセルしました');
+      } else {
+        await downloadResults(results);
+        showStatus('共有できなかったため通常のダウンロードで保存しました');
+      }
+    }
+  } else {
+    await downloadResults(results);
+    showStatus('保存が完了しました');
+  }
+
+  goBtn.disabled = false;
+  goBtn.innerHTML = `変換して保存 <span class="count">(${state.items.length}枚)</span>`;
+});
+
+/* ---------- トリミングエディタ ---------- */
+const cropModal = document.getElementById('cropModal');
+const cropImgWrap = document.getElementById('cropImgWrap');
+const cropImg = document.getElementById('cropImg');
+const cropBox = document.getElementById('cropBox');
+const maskTop = document.getElementById('maskTop');
+const maskBottom = document.getElementById('maskBottom');
+const maskLeft = document.getElementById('maskLeft');
+const maskRight = document.getElementById('maskRight');
+const aspectRow = document.getElementById('aspectRow');
+const cropCancelBtn = document.getElementById('cropCancelBtn');
+const cropConfirmBtn = document.getElementById('cropConfirmBtn');
+const cropResetBtn = document.getElementById('cropResetBtn');
+
+const cropEditor = {
+  item: null, natW: 0, natH: 0, dispW: 0, dispH: 0,
+  box: {x:0,y:0,w:0,h:0}, aspect: null,
+};
+
+function waitCropImgReady(cb){
+  function check(){
+    const rect = cropImg.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      // レイアウトがまだ確定していない場合は次のフレームで再試行
+      requestAnimationFrame(check);
+      return;
+    }
+    cropEditor.dispW = rect.width;
+    cropEditor.dispH = rect.height;
+    cb(rect);
+  }
+  cropImg.onload = () => requestAnimationFrame(check);
+  // 既に同じ画像がロード済み（キャッシュ）でonloadが発火しないケースの保険
+  if (cropImg.complete && cropImg.naturalWidth > 0) requestAnimationFrame(check);
+}
+
+function openCropEditor(item){
+  const rotCanvas = getRotatedCanvas(item);
+  cropEditor.item = item;
+  cropEditor.natW = rotCanvas.width;
+  cropEditor.natH = rotCanvas.height;
+
+  [...aspectRow.children].forEach(c=>c.classList.remove('active'));
+  aspectRow.querySelector('[data-aspect="free"]').classList.add('active');
+  cropEditor.aspect = null;
+
+  // 先にモーダルを表示してレイアウトを確定させてから、画像サイズを測る
+  cropModal.classList.add('show');
+
+  waitCropImgReady((rect) => {
+    const scale = rect.width / cropEditor.natW;
+    if (item.crop) {
+      cropEditor.box = {
+        x: item.crop.x * scale, y: item.crop.y * scale,
+        w: item.crop.w * scale, h: item.crop.h * scale,
+      };
+    } else {
+      const pad = 0.06;
+      cropEditor.box = {
+        x: cropEditor.dispW * pad, y: cropEditor.dispH * pad,
+        w: cropEditor.dispW * (1 - 2*pad), h: cropEditor.dispH * (1 - 2*pad),
+      };
+    }
+    renderCropBox();
+  });
+
+  cropImg.src = rotCanvas.toDataURL('image/jpeg', 0.85);
+}
+
+function rotateInEditor(delta){
+  const item = cropEditor.item;
+  if (!item) return;
+  item.rotation = (item.rotation + delta + 360) % 360;
+  item.crop = null; // 回転で座標系が変わるため、既存のトリミングは無効化
+
+  const rotCanvas = getRotatedCanvas(item);
+  cropEditor.natW = rotCanvas.width;
+  cropEditor.natH = rotCanvas.height;
+
+  waitCropImgReady(() => {
+    const pad = 0.06;
+    let w = cropEditor.dispW * (1 - 2*pad);
+    let h = cropEditor.dispH * (1 - 2*pad);
+    if (cropEditor.aspect) {
+      if (w / h > cropEditor.aspect) { w = h * cropEditor.aspect; } else { h = w / cropEditor.aspect; }
+    }
+    cropEditor.box = {
+      x: (cropEditor.dispW - w) / 2, y: (cropEditor.dispH - h) / 2, w, h,
+    };
+    renderCropBox();
+  });
+
+  cropImg.src = rotCanvas.toDataURL('image/jpeg', 0.85);
+}
+
+function closeCropEditor(){
+  cropModal.classList.remove('show');
+  cropEditor.item = null;
+  renderAll();
+}
+
+function renderCropBox(){
+  const {x, y, w, h} = cropEditor.box;
+  cropBox.style.left = x + 'px';
+  cropBox.style.top = y + 'px';
+  cropBox.style.width = w + 'px';
+  cropBox.style.height = h + 'px';
+
+  maskTop.style.left = '0'; maskTop.style.top = '0';
+  maskTop.style.width = cropEditor.dispW + 'px'; maskTop.style.height = y + 'px';
+
+  maskBottom.style.left = '0'; maskBottom.style.top = (y + h) + 'px';
+  maskBottom.style.width = cropEditor.dispW + 'px'; maskBottom.style.height = (cropEditor.dispH - y - h) + 'px';
+
+  maskLeft.style.left = '0'; maskLeft.style.top = y + 'px';
+  maskLeft.style.width = x + 'px'; maskLeft.style.height = h + 'px';
+
+  maskRight.style.left = (x + w) + 'px'; maskRight.style.top = y + 'px';
+  maskRight.style.width = (cropEditor.dispW - x - w) + 'px'; maskRight.style.height = h + 'px';
+}
+
+function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+let dragMode = null;
+let dragStart = null;
+
+function computeDragBox(clientX, clientY){
+  const dx = clientX - dragStart.px;
+  const dy = clientY - dragStart.py;
+  const start = dragStart.box;
+  const W = cropEditor.dispW, H = cropEditor.dispH;
+  const minSize = 40;
+
+  if (dragMode === 'move') {
+    return {
+      x: clamp(start.x + dx, 0, W - start.w),
+      y: clamp(start.y + dy, 0, H - start.h),
+      w: start.w, h: start.h,
+    };
+  }
+
+  const anchor = {
+    nw: {x: start.x + start.w, y: start.y + start.h},
+    ne: {x: start.x,           y: start.y + start.h},
+    sw: {x: start.x + start.w, y: start.y},
+    se: {x: start.x,           y: start.y},
+  }[dragMode];
+
+  let newW, newH;
+  if (dragMode === 'se') { newW = start.w + dx; newH = start.h + dy; }
+  if (dragMode === 'nw') { newW = start.w - dx; newH = start.h - dy; }
+  if (dragMode === 'ne') { newW = start.w + dx; newH = start.h - dy; }
+  if (dragMode === 'sw') { newW = start.w - dx; newH = start.h + dy; }
+
+  newW = Math.max(minSize, newW);
+  newH = Math.max(minSize, newH);
+  if (cropEditor.aspect) newH = newW / cropEditor.aspect;
+
+  let newX, newY;
+  if (dragMode === 'se') { newX = anchor.x; newY = anchor.y; }
+  if (dragMode === 'nw') { newX = anchor.x - newW; newY = anchor.y - newH; }
+  if (dragMode === 'ne') { newX = anchor.x; newY = anchor.y - newH; }
+  if (dragMode === 'sw') { newX = anchor.x - newW; newY = anchor.y; }
+
+  if (newX < 0) { newW += newX; newX = 0; if (cropEditor.aspect) newH = newW / cropEditor.aspect; }
+  if (newY < 0) { newH += newY; newY = 0; if (cropEditor.aspect) newW = newH * cropEditor.aspect; }
+  if (newX + newW > W) { newW = W - newX; if (cropEditor.aspect) newH = newW / cropEditor.aspect; }
+  if (newY + newH > H) { newH = H - newY; if (cropEditor.aspect) newW = newH * cropEditor.aspect; }
+
+  return {x: newX, y: newY, w: Math.max(minSize, newW), h: Math.max(minSize, newH)};
+}
+
+function beginDrag(e, mode){
+  e.preventDefault();
+  e.stopPropagation();
+  const pt = e.touches ? e.touches[0] : e;
+  dragMode = mode;
+  dragStart = {px: pt.clientX, py: pt.clientY, box: {...cropEditor.box}};
+}
+
+function duringDrag(e){
+  if (!dragMode) return;
+  e.preventDefault();
+  const pt = e.touches ? e.touches[0] : e;
+  cropEditor.box = computeDragBox(pt.clientX, pt.clientY);
+  renderCropBox();
+}
+
+function endDrag(){
+  dragMode = null;
+  dragStart = null;
+}
+
+function wireDrag(el, mode){
+  // タッチ: 同じ要素でstart/move/endを完結させる（タッチは自動的に発生元要素に固定される）
+  el.addEventListener('touchstart', (e)=>{
+    if (mode === 'move' && e.target.closest('.crop-handle')) return;
+    beginDrag(e, mode);
+  }, {passive:false});
+  el.addEventListener('touchmove', duringDrag, {passive:false});
+  el.addEventListener('touchend', endDrag);
+  el.addEventListener('touchcancel', endDrag);
+
+  // マウス: down は要素側、move/up は document 側で追跡（要素外に出ても追従させるため）
+  el.addEventListener('mousedown', (e)=>{
+    if (mode === 'move' && e.target.closest('.crop-handle')) return;
+    beginDrag(e, mode);
+  });
+}
+
+wireDrag(cropBox, 'move');
+cropBox.querySelectorAll('.crop-handle').forEach(handle=>{
+  wireDrag(handle, handle.dataset.handle);
+});
+document.addEventListener('mousemove', duringDrag);
+document.addEventListener('mouseup', endDrag);
+
+aspectRow.addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  [...aspectRow.children].forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  const val = chip.dataset.aspect;
+  cropEditor.aspect = val === 'free' ? null : parseFloat(val);
+
+  if (cropEditor.aspect) {
+    const box = cropEditor.box;
+    const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+    let w = box.w, h = w / cropEditor.aspect;
+    if (h > cropEditor.dispH) { h = cropEditor.dispH; w = h * cropEditor.aspect; }
+    if (w > cropEditor.dispW) { w = cropEditor.dispW; h = w / cropEditor.aspect; }
+    cropEditor.box = {
+      x: clamp(cx - w/2, 0, cropEditor.dispW - w),
+      y: clamp(cy - h/2, 0, cropEditor.dispH - h),
+      w, h,
+    };
+    renderCropBox();
+  }
+});
+
+cropCancelBtn.addEventListener('click', closeCropEditor);
+
+cropConfirmBtn.addEventListener('click', ()=>{
+  const item = cropEditor.item;
+  if (!item) return;
+  const s = cropEditor.natW / cropEditor.dispW;
+  item.crop = {
+    x: Math.round(cropEditor.box.x * s),
+    y: Math.round(cropEditor.box.y * s),
+    w: Math.round(cropEditor.box.w * s),
+    h: Math.round(cropEditor.box.h * s),
+  };
+  closeCropEditor();
+  renderAll();
+});
+
+cropResetBtn.addEventListener('click', ()=>{
+  if (cropEditor.item) cropEditor.item.crop = null;
+  closeCropEditor();
+  renderAll();
+});
+
+const cropRotateLeftBtn = document.getElementById('cropRotateLeftBtn');
+const cropRotateRightBtn = document.getElementById('cropRotateRightBtn');
+cropRotateLeftBtn.addEventListener('click', ()=> rotateInEditor(270));
+cropRotateRightBtn.addEventListener('click', ()=> rotateInEditor(90));
+
+const clearAllBtn = document.getElementById('clearAllBtn');
+clearAllBtn.addEventListener('click', ()=>{
+  if (!state.items.length) return;
+  const ok = confirm(`選択した${state.items.length}枚の写真をすべて削除します。この操作は取り消せません。よろしいですか？`);
+  if (ok) {
+    state.items = [];
+    renderAll();
+  }
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
