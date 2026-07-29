@@ -1,4 +1,4 @@
-const CACHE_NAME = 'photofit-v2';
+const CACHE_NAME = 'photofit-v3';
 const ASSETS = [
   './',
   './index.html',
